@@ -16,7 +16,7 @@
       margin: 10px 0;
       width: 100%;
     }
-    ol { padding-left: 20px; }
+    ol, ul { padding-left: 20px; }
     #ranking, #busqueda-resultados { margin-top: 20px; }
   </style>
 </head>
@@ -39,7 +39,9 @@
 <h2>Ranking por destino</h2>
 <div id="ranking"></div>
 
-<h2>Buscar participante por nombre</h2>
+<hr />
+
+<h2>🔍 Buscar participante por nombre</h2>
 <input type="text" id="busqueda" placeholder="Escribe un nombre..." />
 <div id="busqueda-resultados"></div>
 
@@ -47,10 +49,20 @@
   const supabase = supabase.createClient(
     'https://oqzpnivpfnpoqeuewwza.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo'
-  )
+  );
 
-  const destinos = [/* lista completa de provincias */ "Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Málaga", "Murcia", "Palma", "Las Palmas", "Bilbao", "Alicante", "Córdoba", "Valladolid", "Vigo", "Gijón", "L'Hospitalet", "La Coruña", "Granada", "Vitoria", "Elche", "Oviedo", "Badalona", "Cartagena", "Terrassa", "Jerez", "Sabadell", "Móstoles", "Santa Cruz de Tenerife", "Pamplona", "Alcalá de Henares", "Fuenlabrada", "Almería", "San Sebastián", "Getafe", "Burgos", "Santander", "Castellón", "Albacete", "Logroño", "Salamanca", "Huelva", "Marbella", "Lleida", "Tarragona", "León", "Cádiz", "Torrejón de Ardoz", "Mataró", "Dos Hermanas", "Ceuta", "Melilla"];
+  const destinos = [
+    "Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Málaga", "Murcia", "Palma",
+    "Las Palmas", "Bilbao", "Alicante", "Córdoba", "Valladolid", "Vigo", "Gijón",
+    "L'Hospitalet", "La Coruña", "Granada", "Vitoria", "Elche", "Oviedo", "Badalona",
+    "Cartagena", "Terrassa", "Jerez", "Sabadell", "Móstoles", "Santa Cruz de Tenerife",
+    "Pamplona", "Alcalá de Henares", "Fuenlabrada", "Almería", "San Sebastián", "Getafe",
+    "Burgos", "Santander", "Castellón", "Albacete", "Logroño", "Salamanca", "Huelva",
+    "Marbella", "Lleida", "Tarragona", "León", "Cádiz", "Torrejón de Ardoz", "Mataró",
+    "Dos Hermanas", "Ceuta", "Melilla"
+  ];
 
+  // Rellenar select
   const selectDestino = document.getElementById('destino');
   destinos.forEach(d => {
     const option = document.createElement('option');
@@ -94,16 +106,20 @@
     rankingDiv.innerHTML = '<ol>' + data.map(p => `<li>${p.personas.Nombre} (Nota: ${p.personas.Nota})</li>`).join('') + '</ol>';
   }
 
+  // 🔍 Buscador por nombre
   document.getElementById('busqueda').addEventListener('input', async e => {
     const texto = e.target.value.toLowerCase();
-    if (!texto) return document.getElementById('busqueda-resultados').innerHTML = '';
+    const div = document.getElementById('busqueda-resultados');
+    if (!texto) {
+      div.innerHTML = '';
+      return;
+    }
 
     const { data, error } = await supabase
       .from('personas')
       .select('Nombre, Nota')
       .ilike('Nombre', `%${texto}%`);
 
-    const div = document.getElementById('busqueda-resultados');
     if (error || !data.length) {
       div.textContent = 'Sin resultados';
       return;
