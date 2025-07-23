@@ -2,134 +2,57 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Elección de Destinos</title>
+  <title>Buscador de Personas</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-    label, input, select, button {
-      display: block;
-      margin: 10px 0;
-      width: 100%;
-    }
-    ol, ul { padding-left: 20px; }
-    #ranking, #busqueda-resultados { margin-top: 20px; }
+    body { font-family: sans-serif; padding: 20px; }
+    input { padding: 8px; margin: 5px 0; width: 300px; }
+    ul { margin-top: 10px; }
   </style>
 </head>
 <body>
 
-<h1>Elige tu destino</h1>
+<h1>Buscar Persona</h1>
 
-<label for="user_id">Tu ID:</label>
-<input type="text" id="user_id" placeholder="Introduce tu ID" />
-
-<label for="destino">Destino:</label>
-<select id="destino">
-  <option value="">Selecciona un destino</option>
-</select>
-
-<button id="guardar">Guardar Preferencia</button>
-
-<h2>Participantes totales: <span id="contador">0</span></h2>
-
-<h2>Ranking por destino</h2>
-<div id="ranking"></div>
-
-<hr />
-
-<h2>🔍 Buscar participante por nombre</h2>
-<input type="text" id="busqueda" placeholder="Escribe un nombre..." />
-<div id="busqueda-resultados"></div>
+<input type="text" id="busqueda" placeholder="Escribe tu nombre o parte del nombre" />
+<ul id="resultados"></ul>
 
 <script>
-  const supabase = supabase.createClient(
-    'https://oqzpnivpfnpoqeuewwza.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo'
-  );
+  // Configuración de Supabase
+  const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ya la tienes completa
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  const destinos = [
-    "Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Málaga", "Murcia", "Palma",
-    "Las Palmas", "Bilbao", "Alicante", "Córdoba", "Valladolid", "Vigo", "Gijón",
-    "L'Hospitalet", "La Coruña", "Granada", "Vitoria", "Elche", "Oviedo", "Badalona",
-    "Cartagena", "Terrassa", "Jerez", "Sabadell", "Móstoles", "Santa Cruz de Tenerife",
-    "Pamplona", "Alcalá de Henares", "Fuenlabrada", "Almería", "San Sebastián", "Getafe",
-    "Burgos", "Santander", "Castellón", "Albacete", "Logroño", "Salamanca", "Huelva",
-    "Marbella", "Lleida", "Tarragona", "León", "Cádiz", "Torrejón de Ardoz", "Mataró",
-    "Dos Hermanas", "Ceuta", "Melilla"
-  ];
+  const input = document.getElementById('busqueda');
+  const resultados = document.getElementById('resultados');
 
-  // Rellenar select
-  const selectDestino = document.getElementById('destino');
-  destinos.forEach(d => {
-    const option = document.createElement('option');
-    option.value = d;
-    option.textContent = d;
-    selectDestino.appendChild(option);
-  });
+  input.addEventListener('input', async () => {
+    const texto = input.value.trim();
 
-  document.getElementById('guardar').onclick = async () => {
-    const id_persona = document.getElementById('user_id').value.trim();
-    const destino_elegido = document.getElementById('destino').value;
-    if (!id_persona || !destino_elegido) return alert('Rellena todos los campos');
-
-    const { error } = await supabase.from('preferencias').insert([{ id_persona, destino_elegido }]);
-    if (error) return alert('Error: ' + error.message);
-
-    alert('Preferencia guardada');
-    cargarRanking();
-    cargarContador();
-  }
-
-  async function cargarContador() {
-    const { count } = await supabase.from('preferencias').select('*', { count: 'exact', head: true });
-    document.getElementById('contador').textContent = count ?? '0';
-  }
-
-  async function cargarRanking() {
-    const destino = document.getElementById('destino').value || 'Madrid';
-    const { data, error } = await supabase
-      .from('preferencias')
-      .select('id_persona, destino_elegido, personas!inner(ID, Nombre, Nota)')
-      .eq('destino_elegido', destino)
-      .order('personas.Nota', { ascending: false });
-
-    const rankingDiv = document.getElementById('ranking');
-    if (error || !data.length) {
-      rankingDiv.textContent = 'No hay participantes o error.';
-      return;
-    }
-
-    rankingDiv.innerHTML = '<ol>' + data.map(p => `<li>${p.personas.Nombre} (Nota: ${p.personas.Nota})</li>`).join('') + '</ol>';
-  }
-
-  // 🔍 Buscador por nombre
-  document.getElementById('busqueda').addEventListener('input', async e => {
-    const texto = e.target.value.toLowerCase();
-    const div = document.getElementById('busqueda-resultados');
-    if (!texto) {
-      div.innerHTML = '';
+    if (texto.length < 2) {
+      resultados.innerHTML = '';
       return;
     }
 
     const { data, error } = await supabase
       .from('personas')
-      .select('Nombre, Nota')
+      .select('ID, Nombre, Nota')
       .ilike('Nombre', `%${texto}%`);
 
-    if (error || !data.length) {
-      div.textContent = 'Sin resultados';
+    if (error) {
+      resultados.innerHTML = `<li>Error al buscar: ${error.message}</li>`;
       return;
     }
 
-    div.innerHTML = '<ul>' + data.map(p => `<li>${p.Nombre} (Nota: ${p.Nota})</li>`).join('') + '</ul>';
-  });
+    if (data.length === 0) {
+      resultados.innerHTML = '<li>No se encontraron coincidencias.</li>';
+      return;
+    }
 
-  cargarContador();
-  cargarRanking();
+    resultados.innerHTML = data.map(p =>
+      `<li><strong>${p.Nombre}</strong> (ID: ${p.ID}, Nota: ${p.Nota})</li>`
+    ).join('');
+  });
 </script>
 
 </body>
