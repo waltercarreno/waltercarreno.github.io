@@ -33,25 +33,25 @@
       resultados.innerHTML = '';
       return;
     }
+const { data, error } = await supabase
+  .from('personas')
+  .select('ID_PERSONAS, Nombre, Nota')
+  .ilike('Nombre', `%${texto}%`);
 
-    const { data, error } = await supabase
-      .from('personas')
-      .select('ID, Nombre, Nota')
-      .ilike('Nombre', `%${texto}%`);
+if (error) {
+  resultados.innerHTML = `<li>Error al buscar: ${error.message}</li>`;
+  return;
+}
 
-    if (error) {
-      resultados.innerHTML = `<li>Error al buscar: ${error.message}</li>`;
-      return;
-    }
+if (data.length === 0) {
+  resultados.innerHTML = '<li>No se encontraron coincidencias.</li>';
+  return;
+}
 
-    if (data.length === 0) {
-      resultados.innerHTML = '<li>No se encontraron coincidencias.</li>';
-      return;
-    }
-
-    resultados.innerHTML = data.map(p =>
-      `<li><strong>${p.Nombre}</strong> (ID: ${p.ID}, Nota: ${p.Nota})</li>`
-    ).join('');
+resultados.innerHTML = data.map(p =>
+  `<li><strong>${p.Nombre}</strong> (ID: ${p.ID_PERSONAS}, Nota: ${p.Nota})</li>`
+).join('');
+    
   });
 </script>
 
