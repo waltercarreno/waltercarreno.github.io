@@ -13,45 +13,65 @@
 <body>
 
 <h1>Buscar Persona</h1>
-
-<input type="text" id="busqueda" placeholder="Escribe tu nombre o parte del nombre" />
-<ul id="resultados"></ul>
+input type="text" id="busqueda" placeholder="Escribe tu nombre o parte del nombre" autocomplete="off" />
+<div id="sugerencias" style="border:1px solid #ccc; max-width: 300px; position: absolute; background: white; z-index: 1000;"></div>
 
 <script>
-  // Configuración de Supabase
-  const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo'; // ya la tienes completa
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
   const input = document.getElementById('busqueda');
-  const resultados = document.getElementById('resultados');
+  const sugerencias = document.getElementById('sugerencias');
 
   input.addEventListener('input', async () => {
     const texto = input.value.trim();
+    sugerencias.innerHTML = '';
 
     if (texto.length < 2) {
-      resultados.innerHTML = '';
       return;
     }
-const { data, error } = await supabase
-  .from('personas')
-  .select('ID_PERSONAS, Nombre, Nota')
-  .ilike('Nombre', `%${texto}%`);
 
-if (error) {
-  resultados.innerHTML = `<li>Error al buscar: ${error.message}</li>`;
-  return;
-}
+    const { data, error } = await supabase
+      .from('personas')
+      .select('ID_PERSONAS, Nombre, Nota')
+      .ilike('Nombre', `%${texto}%`)
+      .limit(10); // limitamos a 10 resultados para no saturar
 
-if (data.length === 0) {
-  resultados.innerHTML = '<li>No se encontraron coincidencias.</li>';
-  return;
-}
+    if (error) {
+      sugerencias.innerHTML = `<div style="padding:5px; color:red;">Error: ${error.message}</div>`;
+      return;
+    }
 
-resultados.innerHTML = data.map(p =>
-  `<li><strong>${p.Nombre}</strong> (ID: ${p.ID_PERSONAS}, Nota: ${p.Nota})</li>`
-).join('');
-    
+    if (data.length === 0) {
+      sugerencias.innerHTML = `<div style="padding:5px;">No se encontraron coincidencias.</div>`;
+      return;
+    }
+
+    // Crear lista de sugerencias clicables
+    data.forEach(p => {
+      const item = document.createElement('div');
+      item.style.padding = '5px';
+      item.style.cursor = 'pointer';
+      item.textContent = `${p.Nombre} (ID: ${p.ID_PERSONAS}, Nota: ${p.Nota})`;
+
+      item.addEventListener('click', () => {
+        input.value = p.Nombre;
+        sugerencias.innerHTML = '';
+      });
+
+      item.addEventListener('mouseover', () => {
+        item.style.backgroundColor = '#eee';
+      });
+      item.addEventListener('mouseout', () => {
+        item.style.backgroundColor = 'white';
+      });
+
+      sugerencias.appendChild(item);
+    });
+  });
+
+  // Opcional: cerrar el desplegable si haces click fuera
+  document.addEventListener('click', (e) => {
+    if (e.target !== input) {
+      sugerencias.innerHTML = '';
+    }
   });
 </script>
 
