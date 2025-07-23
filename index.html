@@ -1,9 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<title>Elección de Destinos</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8" />
+  <title>Elección de Destinos</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    label, input, select, button {
+      display: block;
+      margin: 10px 0;
+      width: 100%;
+    }
+    ol { padding-left: 20px; }
+    #ranking, #busqueda-resultados { margin-top: 20px; }
+  </style>
 </head>
 <body>
 
@@ -15,9 +30,6 @@
 <label for="destino">Destino:</label>
 <select id="destino">
   <option value="">Selecciona un destino</option>
-  <option value="Madrid">Madrid</option>
-  <option value="Barcelona">Barcelona</option>
-  <!-- Añade aquí todas las provincias + Ceuta y Melilla -->
 </select>
 
 <button id="guardar">Guardar Preferencia</button>
@@ -27,93 +39,82 @@
 <h2>Ranking por destino</h2>
 <div id="ranking"></div>
 
+<h2>Buscar participante por nombre</h2>
+<input type="text" id="busqueda" placeholder="Escribe un nombre..." />
+<div id="busqueda-resultados"></div>
+
 <script>
-  // Configura tu URL y KEY de Supabase
-  const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co'
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo'
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+  const supabase = supabase.createClient(
+    'https://oqzpnivpfnpoqeuewwza.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo'
+  )
 
-  const destinos = ["Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Málaga", "Murcia", "Palma", "Las Palmas", "Bilbao", "Alicante", "Córdoba", "Valladolid", "Vigo", "Gijón", "L'Hospitalet", "La Coruña", "Granada", "Vitoria", "Elche", "Oviedo", "Badalona", "Cartagena", "Terrassa", "Jerez", "Sabadell", "Móstoles", "Santa Cruz de Tenerife", "Pamplona", "Alcalá de Henares", "Fuenlabrada", "Almería", "San Sebastián", "Getafe", "Burgos", "Santander", "Castellón", "Albacete", "Logroño", "Salamanca", "Huelva", "Marbella", "Lleida", "Tarragona", "León", "Cádiz", "Torrejón de Ardoz", "Mataró", "Dos Hermanas", "Ceuta", "Melilla"]
+  const destinos = [/* lista completa de provincias */ "Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Málaga", "Murcia", "Palma", "Las Palmas", "Bilbao", "Alicante", "Córdoba", "Valladolid", "Vigo", "Gijón", "L'Hospitalet", "La Coruña", "Granada", "Vitoria", "Elche", "Oviedo", "Badalona", "Cartagena", "Terrassa", "Jerez", "Sabadell", "Móstoles", "Santa Cruz de Tenerife", "Pamplona", "Alcalá de Henares", "Fuenlabrada", "Almería", "San Sebastián", "Getafe", "Burgos", "Santander", "Castellón", "Albacete", "Logroño", "Salamanca", "Huelva", "Marbella", "Lleida", "Tarragona", "León", "Cádiz", "Torrejón de Ardoz", "Mataró", "Dos Hermanas", "Ceuta", "Melilla"];
 
-  // Rellenar select con destinos (por si quieres añadir más fácil)
-  const selectDestino = document.getElementById('destino')
+  const selectDestino = document.getElementById('destino');
   destinos.forEach(d => {
-    const option = document.createElement('option')
-    option.value = d
-    option.textContent = d
-    selectDestino.appendChild(option)
-  })
+    const option = document.createElement('option');
+    option.value = d;
+    option.textContent = d;
+    selectDestino.appendChild(option);
+  });
 
   document.getElementById('guardar').onclick = async () => {
-    const id_persona = document.getElementById('user_id').value.trim()
-    const destino_elegido = document.getElementById('destino').value
+    const id_persona = document.getElementById('user_id').value.trim();
+    const destino_elegido = document.getElementById('destino').value;
+    if (!id_persona || !destino_elegido) return alert('Rellena todos los campos');
 
-    if (!id_persona || !destino_elegido) {
-      alert('Introduce tu ID y selecciona un destino')
-      return
-    }
+    const { error } = await supabase.from('preferencias').insert([{ id_persona, destino_elegido }]);
+    if (error) return alert('Error: ' + error.message);
 
-    // Insertar en tabla preferencias
-    const { data, error } = await supabase
-      .from('preferencias')
-      .insert([{ id_persona, destino_elegido }])
-
-    if (error) {
-      alert('Error guardando preferencia: ' + error.message)
-    } else {
-      alert('Preferencia guardada correctamente')
-      cargarRanking()
-      cargarContador()
-    }
+    alert('Preferencia guardada');
+    cargarRanking();
+    cargarContador();
   }
 
   async function cargarContador() {
-    const { count, error } = await supabase
-      .from('preferencias')
-      .select('*', { count: 'exact', head: true })
-    if (!error) {
-      document.getElementById('contador').textContent = count
-    }
+    const { count } = await supabase.from('preferencias').select('*', { count: 'exact', head: true });
+    document.getElementById('contador').textContent = count ?? '0';
   }
 
   async function cargarRanking() {
-    // Ejemplo: obtener ranking por destino Madrid ordenado por nota descendente
-    // Necesitarás hacer un join entre preferencias e id_persona en tabla notas para obtener nota
-
-    const destino = document.getElementById('destino').value || 'Madrid'
-
+    const destino = document.getElementById('destino').value || 'Madrid';
     const { data, error } = await supabase
       .from('preferencias')
-      .select(
-        id_persona,
-        destino_elegido,
-        personas!inner(ID, Nombre, Nota)
-      )
+      .select('id_persona, destino_elegido, personas!inner(ID, Nombre, Nota)')
       .eq('destino_elegido', destino)
-      .order('personas.Nota', { ascending: false })
+      .order('personas.Nota', { ascending: false });
 
-    const rankingDiv = document.getElementById('ranking')
-    if (error) {
-      rankingDiv.textContent = 'Error al cargar ranking: ' + error.message
-      return
-    }
-    if (!data.length) {
-      rankingDiv.textContent = 'No hay participantes para este destino.'
-      return
+    const rankingDiv = document.getElementById('ranking');
+    if (error || !data.length) {
+      rankingDiv.textContent = 'No hay participantes o error.';
+      return;
     }
 
-    let html = '<ol>'
-    data.forEach(item => {
-      html += <li>${item.personas.Nombre} (Nota: ${item.personas.Nota})</li>
-    })
-    html += '</ol>'
-    rankingDiv.innerHTML = html
+    rankingDiv.innerHTML = '<ol>' + data.map(p => `<li>${p.personas.Nombre} (Nota: ${p.personas.Nota})</li>`).join('') + '</ol>';
   }
 
-  // Cargar contador y ranking inicial
-  cargarContador()
-  cargarRanking()
+  document.getElementById('busqueda').addEventListener('input', async e => {
+    const texto = e.target.value.toLowerCase();
+    if (!texto) return document.getElementById('busqueda-resultados').innerHTML = '';
+
+    const { data, error } = await supabase
+      .from('personas')
+      .select('Nombre, Nota')
+      .ilike('Nombre', `%${texto}%`);
+
+    const div = document.getElementById('busqueda-resultados');
+    if (error || !data.length) {
+      div.textContent = 'Sin resultados';
+      return;
+    }
+
+    div.innerHTML = '<ul>' + data.map(p => `<li>${p.Nombre} (Nota: ${p.Nota})</li>`).join('') + '</ul>';
+  });
+
+  cargarContador();
+  cargarRanking();
 </script>
 
 </body>
-</html> 
+</html>
