@@ -15,7 +15,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabase = createClient('https://oqzpnivpfnpoqeuewwza.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo')
 
   async function mostrarDatos() {
-    const { data: personas, error } = await supabase
+    const { data, error } = await supabase
       .from('personas')
       .select('ID_PERSONAS, Nombre, Nota')
       .range(0, 9);  // Leer las primeras 10 filas con paginación
