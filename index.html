@@ -1,90 +1,40 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Tabla paginada Supabase</title>
+  <meta charset="UTF-8">
+  <title>Supabase - 10 Primeros</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    #paginacion { margin-top: 10px; }
-    button { padding: 6px 12px; margin-right: 10px; }
-  </style>
 </head>
 <body>
 
-<h1>Tabla de Personas</h1>
-<div id="tabla-container"></div>
-<div id="paginacion">
-  <button id="anterior">Anterior</button>
-  <span id="pagina-info">Página 1</span>
-  <button id="siguiente">Siguiente</button>
-</div>
+<h2>Primeros 10 registros</h2>
+<div id="tabla"></div>
 
 <script>
   const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  const tablaContainer = document.getElementById('tabla-container');
-  const anteriorBtn = document.getElementById('anterior');
-  const siguienteBtn = document.getElementById('siguiente');
-  const paginaInfo = document.getElementById('pagina-info');
-
-  let paginaActual = 1;
-  const porPagina = 25;
-
-  async function cargarPagina(pagina) {
-    const desde = (pagina - 1) * porPagina;
-    const hasta = desde + porPagina - 1;
-
-    const { data, error, count } = await supabase
+  async function mostrarDatos() {
+    const { data, error } = await supabase
       .from('personas')
-      .select('ID_PERSONAS, Nombre, Nota', { count: 'exact' })
-      .range(desde, hasta)
-      .order('Nombre', { ascending: true });
+      .select('ID_PERSONAS, Nombre, Nota')
+      .limit(10);
 
     if (error) {
-      tablaContainer.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+      document.getElementById('tabla').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
       return;
     }
 
-    renderizarTabla(data);
-    paginaActual = pagina;
-    paginaInfo.textContent = `Página ${pagina}`;
-    anteriorBtn.disabled = paginaActual === 1;
-    siguienteBtn.disabled = hasta + 1 >= count;
+    let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr>';
+    data.forEach(p => {
+      html += `<tr><td>${p.ID_PERSONAS}</td><td>${p.Nombre}</td><td>${p.Nota}</td></tr>`;
+    });
+    html += '</table>';
+    document.getElementById('tabla').innerHTML = html;
   }
 
-  function renderizarTabla(data) {
-    if (!data || data.length === 0) {
-      tablaContainer.innerHTML = '<p>No hay datos para mostrar.</p>';
-      return;
-    }
-
-    let html = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr></thead><tbody>';
-    for (const persona of data) {
-      html += `<tr><td>${persona.ID_PERSONAS}</td><td>${persona.Nombre}</td><td>${persona.Nota}</td></tr>`;
-    }
-    html += '</tbody></table>';
-
-    tablaContainer.innerHTML = html;
-  }
-
-  anteriorBtn.addEventListener('click', () => {
-    if (paginaActual > 1) {
-      cargarPagina(paginaActual - 1);
-    }
-  });
-
-  siguienteBtn.addEventListener('click', () => {
-    cargarPagina(paginaActual + 1);
-  });
-
-  // Cargar la primera página al inicio
-  cargarPagina(1);
+  mostrarDatos();
 </script>
 
 </body>
