@@ -1,39 +1,43 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Supabase - 10 Primeros</title>
+  <meta charset="UTF-8" />
+  <title>Mostrar datos Supabase</title>
 </head>
 <body>
 
-<h2>Primeros 10 registros</h2>
-<div id="tabla"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-import { createClient } from '@supabase/supabase-js'
-// Create a single supabase client for interacting with your database
-const supabase = createClient('https://oqzpnivpfnpoqeuewwza.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo')
+  <div id="tabla">Cargando datos...</div>
 
-  async function mostrarDatos() {
-    const { data, error } = await supabase
-      .from('personas')
-      .select('Nombre')
-      .range(0, 9);  // Leer las primeras 10 filas con paginación
+  <!-- Carga la librería Supabase JS desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    if (error) {
-      document.getElementById('tabla').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
-      return;
+  <script>
+    const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
+
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function mostrarDatos() {
+      const { data: personas, error } = await supabase
+        .from('personas')
+        .select('ID_PERSONAS, Nombre, Nota')
+        .range(0, 9);
+
+      if (error) {
+        document.getElementById('tabla').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+        return;
+      }
+
+      let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr>';
+      personas.forEach(p => {
+        html += `<tr><td>${p.ID_PERSONAS}</td><td>${p.Nombre}</td><td>${p.Nota}</td></tr>`;
+      });
+      html += '</table>';
+      document.getElementById('tabla').innerHTML = html;
     }
 
-    let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr>';
-    personas.forEach(p => {
-      html += `<tr><td>${p.ID_PERSONAS}</td><td>${p.Nombre}</td><td>${p.Nota}</td></tr>`;
-    });
-    html += '</table>';
-    document.getElementById('tabla').innerHTML = html;
-  }
+    mostrarDatos();
+  </script>
 
-  mostrarDatos();
-</script>
 </body>
 </html>
