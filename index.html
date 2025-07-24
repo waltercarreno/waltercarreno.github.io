@@ -7,16 +7,27 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     input { padding: 8px; margin: 5px 0; width: 300px; }
-    ul { margin-top: 10px; }
+    #sugerencias {
+      border: 1px solid #ccc;
+      max-width: 300px;
+      position: absolute;
+      background: white;
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
 
 <h1>Buscar Persona</h1>
 <input type="text" id="busqueda" placeholder="Escribe tu nombre o parte del nombre" autocomplete="off" />
-<div id="sugerencias" style="border:1px solid #ccc; max-width: 300px; position: absolute; background: white; z-index: 1000;"></div>
+<div id="sugerencias"></div>
 
 <script>
+  // Conexión a Supabase
+  const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
   const input = document.getElementById('busqueda');
   const sugerencias = document.getElementById('sugerencias');
 
@@ -24,15 +35,13 @@
     const texto = input.value.trim();
     sugerencias.innerHTML = '';
 
-    if (texto.length < 2) {
-      return;
-    }
+    if (texto.length < 2) return;
 
     const { data, error } = await supabase
       .from('personas')
       .select('ID_PERSONAS, Nombre, Nota')
       .ilike('Nombre', `%${texto}%`)
-      .limit(10); // limitamos a 10 resultados para no saturar
+      .limit(10);
 
     if (error) {
       sugerencias.innerHTML = `<div style="padding:5px; color:red;">Error: ${error.message}</div>`;
@@ -44,7 +53,6 @@
       return;
     }
 
-    // Crear lista de sugerencias clicables
     data.forEach(p => {
       const item = document.createElement('div');
       item.style.padding = '5px';
@@ -56,22 +64,16 @@
         sugerencias.innerHTML = '';
       });
 
-      item.addEventListener('mouseover', () => {
-        item.style.backgroundColor = '#eee';
-      });
-      item.addEventListener('mouseout', () => {
-        item.style.backgroundColor = 'white';
-      });
+      item.addEventListener('mouseover', () => item.style.backgroundColor = '#eee');
+      item.addEventListener('mouseout', () => item.style.backgroundColor = 'white');
 
       sugerencias.appendChild(item);
     });
   });
 
-  // Opcional: cerrar el desplegable si haces click fuera
+  // Cerrar sugerencias si se hace clic fuera
   document.addEventListener('click', (e) => {
-    if (e.target !== input) {
-      sugerencias.innerHTML = '';
-    }
+    if (e.target !== input) sugerencias.innerHTML = '';
   });
 </script>
 
