@@ -7,6 +7,7 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     input { padding: 8px; margin: 5px 0; width: 300px; }
+    button { padding: 8px 12px; margin-left: 10px; cursor: pointer; }
     #sugerencias {
       border: 1px solid #ccc;
       max-width: 300px;
@@ -14,12 +15,16 @@
       background: white;
       z-index: 1000;
     }
+    .sugerencia:hover {
+      background-color: #eee;
+    }
   </style>
 </head>
 <body>
 
 <h1>Buscar Persona</h1>
 <input type="text" id="busqueda" placeholder="Escribe tu nombre o parte del nombre" autocomplete="off" />
+<button id="verTodos">Ver todos</button>
 <div id="sugerencias"></div>
 
 <script>
@@ -30,12 +35,38 @@
 
   const input = document.getElementById('busqueda');
   const sugerencias = document.getElementById('sugerencias');
+  const botonVerTodos = document.getElementById('verTodos');
+
+  async function mostrarResultados(data) {
+    sugerencias.innerHTML = '';
+
+    if (!data || data.length === 0) {
+      sugerencias.innerHTML = `<div style="padding:5px;">No se encontraron coincidencias.</div>`;
+      return;
+    }
+
+    data.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'sugerencia';
+      item.style.padding = '5px';
+      item.style.cursor = 'pointer';
+      item.textContent = `${p.Nombre} (ID: ${p.ID_PERSONAS}, Nota: ${p.Nota})`;
+
+      item.addEventListener('click', () => {
+        input.value = p.Nombre;
+        sugerencias.innerHTML = '';
+      });
+
+      sugerencias.appendChild(item);
+    });
+  }
 
   input.addEventListener('input', async () => {
     const texto = input.value.trim();
-    sugerencias.innerHTML = '';
-
-    if (texto.length < 2) return;
+    if (texto.length < 2) {
+      sugerencias.innerHTML = '';
+      return;
+    }
 
     const { data, error } = await supabase
       .from('personas')
@@ -48,32 +79,29 @@
       return;
     }
 
-    if (data.length === 0) {
-      sugerencias.innerHTML = `<div style="padding:5px;">No se encontraron coincidencias.</div>`;
+    mostrarResultados(data);
+  });
+
+  botonVerTodos.addEventListener('click', async () => {
+    const { data, error } = await supabase
+      .from('personas')
+      .select('ID_PERSONAS, Nombre, Nota')
+      .order('Nombre', { ascending: true }) // opcional
+      .limit(50); // puedes ajustar este número
+
+    if (error) {
+      sugerencias.innerHTML = `<div style="padding:5px; color:red;">Error: ${error.message}</div>`;
       return;
     }
 
-    data.forEach(p => {
-      const item = document.createElement('div');
-      item.style.padding = '5px';
-      item.style.cursor = 'pointer';
-      item.textContent = `${p.Nombre} (ID: ${p.ID_PERSONAS}, Nota: ${p.Nota})`;
-
-      item.addEventListener('click', () => {
-        input.value = p.Nombre;
-        sugerencias.innerHTML = '';
-      });
-
-      item.addEventListener('mouseover', () => item.style.backgroundColor = '#eee');
-      item.addEventListener('mouseout', () => item.style.backgroundColor = 'white');
-
-      sugerencias.appendChild(item);
-    });
+    mostrarResultados(data);
   });
 
   // Cerrar sugerencias si se hace clic fuera
   document.addEventListener('click', (e) => {
-    if (e.target !== input) sugerencias.innerHTML = '';
+    if (e.target !== input && e.target !== botonVerTodos) {
+      sugerencias.innerHTML = '';
+    }
   });
 </script>
 
