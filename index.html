@@ -17,7 +17,7 @@ const supabase = createClient('https://oqzpnivpfnpoqeuewwza.supabase.co', 'eyJhb
   async function mostrarDatos() {
     const { data, error } = await supabase
       .from('personas')
-      .select('ID_PERSONAS, Nombre, Nota')
+      .select('Nombre')
       .range(0, 9);  // Leer las primeras 10 filas con paginación
 
     if (error) {
