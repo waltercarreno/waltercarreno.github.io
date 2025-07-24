@@ -11,10 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co'
-const supabaseKey = process.env.SUPABASE_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
+// Create a single supabase client for interacting with your database
+const supabase = createClient('https://oqzpnivpfnpoqeuewwza.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo')
 
   async function mostrarDatos() {
     const { data: personas, error } = await supabase
