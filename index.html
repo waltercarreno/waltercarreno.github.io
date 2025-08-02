@@ -14,7 +14,8 @@
         const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
 
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const { createClient } = window.supabase;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
         async function mostrarDatos() {
             const { data: personas, error } = await supabase
