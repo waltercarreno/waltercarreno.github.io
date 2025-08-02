@@ -15,7 +15,7 @@
             position: absolute;
             background: white;
             z-index: 100;
-            width: 250px; /* Ajusta el ancho según tu input */
+            width: 250px;
             display: none;
         }
         .sugerencia-item {
@@ -92,7 +92,7 @@
                 personas.forEach(p => {
                     const item = document.createElement('div');
                     item.className = 'sugerencia-item';
-                    item.textContent = `${p.NOMBRE} (Orden: ${p.ORDEN})`;
+                    item.textContent = p.NOMBRE;
                     item.onclick = () => seleccionarOpositor(p);
                     sugerenciasDiv.appendChild(item);
                 });
