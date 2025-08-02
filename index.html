@@ -30,7 +30,7 @@
 
             let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr>';
             personas.forEach(p => {
-                html += `<tr><td>${p.ID_PERSONAS}</td><td>${p.Nombre}</td><td>${p.Nota}</td></tr>`;
+                html += `<tr><td>${p.ORDEN}</td><td>${p.DNI}</td><td>${p.NOMBRE}</td></tr>`;
             });
             html += '</table>';
             document.getElementById('tabla').innerHTML = html;
