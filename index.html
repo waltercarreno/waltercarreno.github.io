@@ -31,7 +31,7 @@
             resultadosDiv.innerHTML = 'Buscando...';
 
             // Comprobamos si el término de búsqueda es un número para buscar por Orden
-            let query = supabase.from('personas').select('Orden, Dni, nombre');
+            let query = supabase.from('personas').select('ORDEN, DNI, NOMBRE');
             if (!isNaN(terminoBusqueda) && terminoBusqueda !== '') {
                 query = query.eq('Orden', terminoBusqueda);
             } else {
