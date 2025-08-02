@@ -5,12 +5,7 @@
     <title>Buscador de Opositores</title>
     <style>
         .buscador-container {
-            margin-bottom: 20px;
-        }
-        #resultados-busqueda {
-            border: 1px solid #ccc;
-            padding: 10px;
-            min-height: 50px;
+            position: relative;
         }
         #sugerencias-nombre {
             border: 1px solid #ccc;
@@ -21,6 +16,7 @@
             background: white;
             z-index: 100;
             width: 250px; /* Ajusta el ancho según tu input */
+            display: none;
         }
         .sugerencia-item {
             padding: 8px;
@@ -29,6 +25,18 @@
         .sugerencia-item:hover {
             background-color: #f0f0f0;
         }
+        #resultados-busqueda {
+            margin-top: 20px;
+        }
+        .boton-acceso {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -36,15 +44,8 @@
     <h1>Buscador de Opositores</h1>
 
     <div class="buscador-container">
-        <h2>Buscar por Orden</h2>
-        <label for="buscador-orden">Introduce el ID (Orden):</label>
-        <input type="number" id="buscador-orden" placeholder="Ej: 123">
-        <button onclick="buscarPorOrden()">Buscar</button>
-    </div>
-
-    <div class="buscador-container">
-        <h2>Buscar por Nombre</h2>
-        <label for="buscador-nombre">Introduce el nombre:</label>
+        <h2>Busca por Nombre</h2>
+        <label for="buscador-nombre">Introduce tu nombre:</label>
         <input type="text" id="buscador-nombre" placeholder="Ej: juan perez">
         <div id="sugerencias-nombre"></div>
     </div>
@@ -60,15 +61,16 @@
         
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         
-        const resultadosDiv = document.getElementById('resultados-busqueda');
         const inputNombre = document.getElementById('buscador-nombre');
         const sugerenciasDiv = document.getElementById('sugerencias-nombre');
+        const resultadosDiv = document.getElementById('resultados-busqueda');
 
         // Búsqueda en tiempo real por nombre
         inputNombre.addEventListener('input', async (e) => {
             const terminoBusqueda = e.target.value.trim();
             if (terminoBusqueda.length < 3) {
                 sugerenciasDiv.innerHTML = '';
+                sugerenciasDiv.style.display = 'none';
                 return;
             }
 
@@ -81,55 +83,48 @@
             
             if (error) {
                 sugerenciasDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+                sugerenciasDiv.style.display = 'block';
                 return;
             }
 
             sugerenciasDiv.innerHTML = '';
-            personas.forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'sugerencia-item';
-                item.textContent = `${p.NOMBRE} (Orden: ${p.ORDEN})`;
-                item.onclick = () => mostrarOpositor(p);
-                sugerenciasDiv.appendChild(item);
-            });
+            if (personas.length > 0) {
+                personas.forEach(p => {
+                    const item = document.createElement('div');
+                    item.className = 'sugerencia-item';
+                    item.textContent = `${p.NOMBRE} (Orden: ${p.ORDEN})`;
+                    item.onclick = () => seleccionarOpositor(p);
+                    sugerenciasDiv.appendChild(item);
+                });
+                sugerenciasDiv.style.display = 'block';
+            } else {
+                sugerenciasDiv.innerHTML = `<p style="padding: 8px;">No se encontraron resultados.</p>`;
+                sugerenciasDiv.style.display = 'block';
+            }
         });
 
-        // Búsqueda por Orden (botón)
-        async function buscarPorOrden() {
-            const terminoBusqueda = document.getElementById('buscador-orden').value.trim();
-            resultadosDiv.innerHTML = 'Buscando...';
-
-            if (terminoBusqueda === '') {
-                resultadosDiv.innerHTML = `<p style="color:orange;">Por favor, introduce un número de Orden.</p>`;
-                return;
-            }
-
-            const { data: persona, error } = await supabase
-                .from('personas')
-                .select('ORDEN, NOMBRE')
-                .eq('ORDEN', terminoBusqueda)
-                .limit(1);
-
-            if (error) {
-                resultadosDiv.innerHTML = `<p style="color:red;">Error al buscar: ${error.message}</p>`;
-                return;
-            }
-
-            if (persona && persona.length > 0) {
-                mostrarOpositor(persona[0]);
-            } else {
-                resultadosDiv.innerHTML = `<p>No se encontró ningún opositor con ese número de Orden.</p>`;
-            }
+        // Función para seleccionar un opositor del desplegable
+        function seleccionarOpositor(opositor) {
+            inputNombre.value = opositor.NOMBRE;
+            sugerenciasDiv.innerHTML = '';
+            sugerenciasDiv.style.display = 'none';
+            mostrarOpositor(opositor);
         }
 
-        // Función para mostrar los datos del opositor
+        // Función para mostrar los datos del opositor y el botón
         function mostrarOpositor(opositor) {
             resultadosDiv.innerHTML = `
-                <h3>Opositor encontrado</h3>
-                <p><strong>Nombre:</strong> ${opositor.NOMBRE}</p>
-                <p><strong>Orden:</strong> ${opositor.ORDEN}</p>
-                `;
-            sugerenciasDiv.innerHTML = '';
+                <h3>¡Hola, ${opositor.NOMBRE}!</h3>
+                <p>Tu posición en la lista es: <strong>${opositor.ORDEN}</strong></p>
+                <button class="boton-acceso" onclick="entrarEnEspacio('${opositor.ORDEN}')">Ir a mis preferencias</button>
+            `;
+        }
+
+        // Esta función se activará al hacer clic en el botón
+        function entrarEnEspacio(ordenOpositor) {
+            alert(`Accediendo al espacio de preferencias del opositor con Orden: ${ordenOpositor}`);
+            // Aquí puedes añadir la lógica para redirigir al usuario o mostrar un formulario
+            // Por ejemplo: window.location.href = `/preferencias.html?id=${ordenOpositor}`;
         }
     </script>
 
