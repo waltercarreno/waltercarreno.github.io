@@ -3,15 +3,50 @@
 <head>
     <meta charset="UTF-8" />
     <title>Buscador de Opositores</title>
+    <style>
+        .buscador-container {
+            margin-bottom: 20px;
+        }
+        #resultados-busqueda {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 50px;
+        }
+        #sugerencias-nombre {
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 150px;
+            overflow-y: auto;
+            position: absolute;
+            background: white;
+            z-index: 100;
+            width: 250px; /* Ajusta el ancho según tu input */
+        }
+        .sugerencia-item {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .sugerencia-item:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
 </head>
 <body>
 
     <h1>Buscador de Opositores</h1>
 
     <div class="buscador-container">
-        <label for="buscador">Buscar por Nombre, DNI u Orden:</label>
-        <input type="text" id="buscador" placeholder="Ej: Juan Pérez, 12345678A o 123">
-        <button onclick="buscarOpositor()">Buscar</button>
+        <h2>Buscar por Orden</h2>
+        <label for="buscador-orden">Introduce el ID (Orden):</label>
+        <input type="number" id="buscador-orden" placeholder="Ej: 123">
+        <button onclick="buscarPorOrden()">Buscar</button>
+    </div>
+
+    <div class="buscador-container">
+        <h2>Buscar por Nombre</h2>
+        <label for="buscador-nombre">Introduce el nombre:</label>
+        <input type="text" id="buscador-nombre" placeholder="Ej: juan perez">
+        <div id="sugerencias-nombre"></div>
     </div>
 
     <div id="resultados-busqueda"></div>
@@ -22,24 +57,58 @@
         // Configuración de Supabase
         const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
-
+        
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        const resultadosDiv = document.getElementById('resultados-busqueda');
+        const inputNombre = document.getElementById('buscador-nombre');
+        const sugerenciasDiv = document.getElementById('sugerencias-nombre');
 
-        async function buscarOpositor() {
-            const terminoBusqueda = document.getElementById('buscador').value.trim();
-            const resultadosDiv = document.getElementById('resultados-busqueda');
-            resultadosDiv.innerHTML = 'Buscando...';
-
-            // Comprobamos si el término de búsqueda es un número para buscar por Orden
-            let query = supabase.from('personas').select('ORDEN, DNI, NOMBRE');
-            if (!isNaN(terminoBusqueda) && terminoBusqueda !== '') {
-                query = query.eq('Orden', terminoBusqueda);
-            } else {
-                // Buscamos por DNI o Nombre con la función .ilike para buscar coincidencias parciales
-                query = query.or(`Dni.ilike.%${terminoBusqueda}%, nombre.ilike.%${terminoBusqueda}%`);
+        // Búsqueda en tiempo real por nombre
+        inputNombre.addEventListener('input', async (e) => {
+            const terminoBusqueda = e.target.value.trim();
+            if (terminoBusqueda.length < 3) {
+                sugerenciasDiv.innerHTML = '';
+                return;
             }
 
-            const { data: persona, error } = await query;
+            const { data: personas, error } = await supabase
+                .from('personas')
+                .select('ORDEN, NOMBRE')
+                .ilike('NOMBRE', `%${terminoBusqueda}%`)
+                .order('NOMBRE', { ascending: true })
+                .limit(10);
+            
+            if (error) {
+                sugerenciasDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+                return;
+            }
+
+            sugerenciasDiv.innerHTML = '';
+            personas.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'sugerencia-item';
+                item.textContent = `${p.NOMBRE} (Orden: ${p.ORDEN})`;
+                item.onclick = () => mostrarOpositor(p);
+                sugerenciasDiv.appendChild(item);
+            });
+        });
+
+        // Búsqueda por Orden (botón)
+        async function buscarPorOrden() {
+            const terminoBusqueda = document.getElementById('buscador-orden').value.trim();
+            resultadosDiv.innerHTML = 'Buscando...';
+
+            if (terminoBusqueda === '') {
+                resultadosDiv.innerHTML = `<p style="color:orange;">Por favor, introduce un número de Orden.</p>`;
+                return;
+            }
+
+            const { data: persona, error } = await supabase
+                .from('personas')
+                .select('ORDEN, NOMBRE')
+                .eq('ORDEN', terminoBusqueda)
+                .limit(1);
 
             if (error) {
                 resultadosDiv.innerHTML = `<p style="color:red;">Error al buscar: ${error.message}</p>`;
@@ -47,16 +116,20 @@
             }
 
             if (persona && persona.length > 0) {
-                const p = persona[0];
-                resultadosDiv.innerHTML = `
-                    <h3>Opositor encontrado</h3>
-                    <p><strong>Nombre:</strong> ${p.nombre}</p>
-                    <p><strong>Orden:</strong> ${p.Orden}</p>
-                    <p><strong>DNI:</strong> ${p.Dni}</p>
-                `;
+                mostrarOpositor(persona[0]);
             } else {
-                resultadosDiv.innerHTML = `<p>No se encontró ningún opositor con ese dato.</p>`;
+                resultadosDiv.innerHTML = `<p>No se encontró ningún opositor con ese número de Orden.</p>`;
             }
+        }
+
+        // Función para mostrar los datos del opositor
+        function mostrarOpositor(opositor) {
+            resultadosDiv.innerHTML = `
+                <h3>Opositor encontrado</h3>
+                <p><strong>Nombre:</strong> ${opositor.NOMBRE}</p>
+                <p><strong>Orden:</strong> ${opositor.ORDEN}</p>
+                `;
+            sugerenciasDiv.innerHTML = '';
         }
     </script>
 
