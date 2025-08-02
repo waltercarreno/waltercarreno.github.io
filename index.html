@@ -20,7 +20,7 @@
         async function mostrarDatos() {
             const { data: personas, error } = await supabase
                 .from('personas')
-                .select('ID_PERSONAS, Nombre, Nota')
+                .select('ORDEN, DNI, NOMBRE')
                 .range(0, 9);
 
             if (error) {
