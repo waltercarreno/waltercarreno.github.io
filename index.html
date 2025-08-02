@@ -2,41 +2,62 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <title>Mostrar datos Supabase</title>
+    <title>Buscador de Opositores</title>
 </head>
 <body>
 
-    <div id="tabla">Cargando datos...</div>
+    <h1>Buscador de Opositores</h1>
+
+    <div class="buscador-container">
+        <label for="buscador">Buscar por Nombre, DNI u Orden:</label>
+        <input type="text" id="buscador" placeholder="Ej: Juan Pérez, 12345678A o 123">
+        <button onclick="buscarOpositor()">Buscar</button>
+    </div>
+
+    <div id="resultados-busqueda"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
+        // Configuración de Supabase
         const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
 
-        const { createClient } = window.supabase;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        async function mostrarDatos() {
-            const { data: personas, error } = await supabase
-                .from('personas')
-                .select('ORDEN, DNI, NOMBRE')
-                .range(0, 9);
+        async function buscarOpositor() {
+            const terminoBusqueda = document.getElementById('buscador').value.trim();
+            const resultadosDiv = document.getElementById('resultados-busqueda');
+            resultadosDiv.innerHTML = 'Buscando...';
+
+            // Comprobamos si el término de búsqueda es un número para buscar por Orden
+            let query = supabase.from('personas').select('Orden, Dni, nombre');
+            if (!isNaN(terminoBusqueda) && terminoBusqueda !== '') {
+                query = query.eq('Orden', terminoBusqueda);
+            } else {
+                // Buscamos por DNI o Nombre con la función .ilike para buscar coincidencias parciales
+                query = query.or(`Dni.ilike.%${terminoBusqueda}%, nombre.ilike.%${terminoBusqueda}%`);
+            }
+
+            const { data: persona, error } = await query;
 
             if (error) {
-                document.getElementById('tabla').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+                resultadosDiv.innerHTML = `<p style="color:red;">Error al buscar: ${error.message}</p>`;
                 return;
             }
 
-            let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr>';
-            personas.forEach(p => {
-                html += `<tr><td>${p.ORDEN}</td><td>${p.DNI}</td><td>${p.NOMBRE}</td></tr>`;
-            });
-            html += '</table>';
-            document.getElementById('tabla').innerHTML = html;
+            if (persona && persona.length > 0) {
+                const p = persona[0];
+                resultadosDiv.innerHTML = `
+                    <h3>Opositor encontrado</h3>
+                    <p><strong>Nombre:</strong> ${p.nombre}</p>
+                    <p><strong>Orden:</strong> ${p.Orden}</p>
+                    <p><strong>DNI:</strong> ${p.Dni}</p>
+                `;
+            } else {
+                resultadosDiv.innerHTML = `<p>No se encontró ningún opositor con ese dato.</p>`;
+            }
         }
-
-        mostrarDatos();
     </script>
 
 </body>
