@@ -1,43 +1,43 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Mostrar datos Supabase</title>
+    <meta charset="UTF-8" />
+    <title>Mostrar datos Supabase</title>
 </head>
 <body>
 
-  <div id="tabla">Cargando datos...</div>
+    <div id="tabla">Cargando datos...</div>
 
-  <!-- Carga la librería Supabase JS desde CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script>
-    const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
+    <script>
+        const supabaseUrl = 'https://oqzpnivpfnpoqeuewwza.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xenBuaXZwZm5wb3FldWV3d3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzkxNzAsImV4cCI6MjA2ODg1NTE3MH0.bFmCIxSRadItouzsl9KmjisCLlk8dms8KljA1vPDrJo';
 
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        const { createClient } = supabase;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
-    async function mostrarDatos() {
-      const { data: personas, error } = await supabase
-        .from('personas')
-        .select('ID_PERSONAS, Nombre, Nota')
-        .range(0, 9);
+        async function mostrarDatos() {
+            const { data: personas, error } = await supabase
+                .from('personas')
+                .select('ID_PERSONAS, Nombre, Nota')
+                .range(0, 9);
 
-      if (error) {
-        document.getElementById('tabla').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
-        return;
-      }
+            if (error) {
+                document.getElementById('tabla').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+                return;
+            }
 
-      let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr>';
-      personas.forEach(p => {
-        html += `<tr><td>${p.ID_PERSONAS}</td><td>${p.Nombre}</td><td>${p.Nota}</td></tr>`;
-      });
-      html += '</table>';
-      document.getElementById('tabla').innerHTML = html;
-    }
+            let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Nombre</th><th>Nota</th></tr>';
+            personas.forEach(p => {
+                html += `<tr><td>${p.ID_PERSONAS}</td><td>${p.Nombre}</td><td>${p.Nota}</td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('tabla').innerHTML = html;
+        }
 
-    mostrarDatos();
-  </script>
+        mostrarDatos();
+    </script>
 
 </body>
 </html>
