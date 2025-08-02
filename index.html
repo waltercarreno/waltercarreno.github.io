@@ -1,56 +1,40 @@
-<!DOCTYPE html>
+[⚠️ Suspicious Content] <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <title>Buscador de Opositores</title>
     <style>
-        .buscador-container {
-            position: relative;
-        }
+        .buscador-container { position: relative; }
         #sugerencias-nombre {
-            border: 1px solid #ccc;
-            border-top: none;
-            max-height: 150px;
-            overflow-y: auto;
-            position: absolute;
-            background: white;
-            z-index: 100;
-            width: 250px;
-            display: none;
+            border: 1px solid #ccc; border-top: none; max-height: 150px;
+            overflow-y: auto; position: absolute; background: white; z-index: 100;
+            width: 250px; display: none;
         }
-        .sugerencia-item {
-            padding: 8px;
-            cursor: pointer;
-        }
-        .sugerencia-item:hover {
-            background-color: #f0f0f0;
-        }
-        #resultados-busqueda {
-            margin-top: 20px;
-        }
+        .sugerencia-item { padding: 8px; cursor: pointer; }
+        .sugerencia-item:hover { background-color: #f0f0f0; }
+        #resultados-busqueda, #preferencias-container { margin-top: 20px; }
+        #preferencias-container { display: none; } /* Oculto por defecto */
         .boton-acceso {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
+            margin-top: 10px; padding: 10px 20px; background-color: #007bff;
+            color: white; border: none; cursor: pointer; border-radius: 5px;
         }
+        .preferencia-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <h1>Buscador de Opositores</h1>
 
-    <div class="buscador-container">
+    <div id="buscador-container">
         <h2>Busca por Nombre</h2>
         <label for="buscador-nombre">Introduce tu nombre:</label>
         <input type="text" id="buscador-nombre" placeholder="Ej: juan perez">
         <div id="sugerencias-nombre"></div>
+        <div id="resultados-busqueda"></div>
     </div>
-
-    <div id="resultados-busqueda"></div>
+    
+    <div id="preferencias-container">
+        </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -61,9 +45,14 @@
         
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         
+        const buscadorContainer = document.getElementById('buscador-container');
+        const preferenciasContainer = document.getElementById('preferencias-container');
         const inputNombre = document.getElementById('buscador-nombre');
         const sugerenciasDiv = document.getElementById('sugerencias-nombre');
         const resultadosDiv = document.getElementById('resultados-busqueda');
+
+        let provinciasDisponibles = [];
+        let opositorActual = null;
 
         // Búsqueda en tiempo real por nombre
         inputNombre.addEventListener('input', async (e) => {
@@ -104,29 +93,149 @@
         });
 
         // Función para seleccionar un opositor del desplegable
-        function seleccionarOpositor(opositor) {
+        async function seleccionarOpositor(opositor) {
+            opositorActual = opositor; // Guardamos el opositor seleccionado
             inputNombre.value = opositor.NOMBRE;
             sugerenciasDiv.innerHTML = '';
             sugerenciasDiv.style.display = 'none';
-            mostrarOpositor(opositor);
+            
+            // Oculta el buscador y muestra el contenedor de preferencias
+            buscadorContainer.style.display = 'none';
+            preferenciasContainer.style.display = 'block';
+            
+            await mostrarFormularioPreferencias();
         }
 
-        // Función para mostrar los datos del opositor y el botón
-        function mostrarOpositor(opositor) {
-            resultadosDiv.innerHTML = `
-                <h3>¡Hola, ${opositor.NOMBRE}!</h3>
-                <p>Tu posición en la lista es: <strong>${opositor.ORDEN}</strong></p>
-                <button class="boton-acceso" onclick="entrarEnEspacio('${opositor.ORDEN}')">Ir a mis preferencias</button>
+        // --- Funciones para el formulario de preferencias ---
+
+        async function cargarProvincias() {
+            const { data: provincias, error } = await supabase
+                .from('Provincias')
+                .select('id, nombre')
+                .order('nombre', { ascending: true });
+            
+            if (error) {
+                console.error("Error al cargar provincias:", error.message);
+                return;
+            }
+            provinciasDisponibles = provincias;
+        }
+        
+        async function cargarPreferenciasAnteriores() {
+            if (!opositorActual) return [];
+            
+            const { data: preferencias, error } = await supabase
+                .from('OpositorPreferencias')
+                .select('provincia_id, orden_preferencia')
+                .eq('id_opositor', opositorActual.ORDEN)
+                .order('orden_preferencia', { ascending: true });
+
+            if (error) {
+                console.error("Error al cargar preferencias anteriores:", error.message);
+                return [];
+            }
+            return preferencias;
+        }
+
+        function generarSelectProvincias(selectedId = null) {
+            let selectHTML = '<select class="provincia-select">';
+            provinciasDisponibles.forEach(prov => {
+                const isSelected = selectedId && prov.id === selectedId ? 'selected' : '';
+                selectHTML += `<option value="${prov.id}" ${isSelected}>${prov.nombre}</option>`;
+            });
+            selectHTML += '</select>';
+            return selectHTML;
+        }
+
+        function anadirCampoPreferencia(provinciaId = null, orden = null) {
+            const listaPreferencias = document.getElementById('lista-preferencias');
+            const nuevoItem = document.createElement('div');
+            nuevoItem.className = 'preferencia-item';
+            
+            const ordenValue = orden ? orden : (listaPreferencias.children.length + 1);
+            
+            nuevoItem.innerHTML = `
+                ${generarSelectProvincias(provinciaId)}
+                <label>Orden:</label>
+                <input type="number" class="orden-input" min="1" value="${ordenValue}">
+                <button onclick="this.parentElement.remove()">Eliminar</button>
             `;
+            listaPreferencias.appendChild(nuevoItem);
         }
 
-        // Esta función se activará al hacer clic en el botón
-        function entrarEnEspacio(ordenOpositor) {
-            alert(`Accediendo al espacio de preferencias del opositor con Orden: ${ordenOpositor}`);
-            // Aquí puedes añadir la lógica para redirigir al usuario o mostrar un formulario
-            // Por ejemplo: window.location.href = `/preferencias.html?id=${ordenOpositor}`;
+        async function mostrarFormularioPreferencias() {
+            await cargarProvincias();
+            const preferenciasAnteriores = await cargarPreferenciasAnteriores();
+            
+            preferenciasContainer.innerHTML = `
+                <h3>¡Hola, ${opositorActual.NOMBRE}!</h3>
+                <p>Tu posición en la lista es: <strong>${opositorActual.ORDEN}</strong></p>
+                <div id="formulario-preferencias">
+                    <h4>Tus preferencias de destino</h4>
+                    <p>Las preferencias que añadas ahora sustituirán a las anteriores.</p>
+                    <div id="lista-preferencias"></div>
+                    <button type="button" onclick="anadirCampoPreferencia()">Añadir otra preferencia</button>
+                    <button type="button" class="boton-acceso" onclick="guardarPreferencias()">Guardar preferencias</button>
+                </div>
+            `;
+            
+            if (preferenciasAnteriores.length > 0) {
+                preferenciasAnteriores.forEach(p => anadirCampoPreferencia(p.provincia_id, p.orden_preferencia));
+            } else {
+                anadirCampoPreferencia(); // Añadimos el primer campo por defecto
+            }
+        }
+
+        async function guardarPreferencias() {
+            const preferencias = [];
+            const items = document.getElementById('lista-preferencias').children;
+
+            if (items.length === 0) {
+                alert("No has seleccionado ninguna preferencia.");
+                return;
+            }
+
+            for (const item of items) {
+                const provinciaId = item.querySelector('.provincia-select').value;
+                const orden = item.querySelector('.orden-input').value;
+                if (provinciaId && orden) {
+                    preferencias.push({
+                        id_opositor: opositorActual.ORDEN,
+                        provincia_id: provinciaId,
+                        orden_preferencia: parseInt(orden)
+                    });
+                }
+            }
+
+            // Paso 1: Borrar preferencias antiguas del opositor
+            const { error: deleteError } = await supabase
+                .from('OpositorPreferencias')
+                .delete()
+                .eq('id_opositor', opositorActual.ORDEN);
+
+            if (deleteError) {
+                alert(`Error al borrar preferencias antiguas: ${deleteError.message}`);
+                return;
+            }
+
+            // Paso 2: Guardar las nuevas preferencias
+            const { error: insertError } = await supabase
+                .from('OpositorPreferencias')
+                .insert(preferencias);
+
+            if (insertError) {
+                alert(`Error al guardar las nuevas preferencias: ${insertError.message}`);
+                return;
+            }
+
+            alert("✅ ¡Preferencias guardadas con éxito!");
+            
+            // Regresar al buscador
+            preferenciasContainer.style.display = 'none';
+            buscadorContainer.style.display = 'block';
+            inputNombre.value = '';
+            resultadosDiv.innerHTML = '';
         }
     </script>
-
 </body>
 </html>
